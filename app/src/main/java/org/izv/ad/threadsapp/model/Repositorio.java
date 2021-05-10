@@ -21,13 +21,14 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import javax.net.ssl.HttpsURLConnection;
 
 public class Repositorio {
 
     //https://stackoverflow.com/questions/61023968/what-do-i-use-now-that-handler-is-deprecated
-    
+
     private MutableLiveData<String> liveResult = new MutableLiveData<>();
 
     class AsynchronousTask extends AsyncTask {
@@ -63,6 +64,7 @@ public class Repositorio {
         requestWithExecutorService();
         requestWithHandlerMessage();
         requestWithHandlerPost();
+        requestWithPool();
         requestWithRunnable();
         requestWithThread();
     }
@@ -99,7 +101,7 @@ public class Repositorio {
             HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
             connection.setDoInput(true);
             connection.setRequestProperty("Accept", "application/json");
-            //connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("Content-Type", "application/json");
             connection.connect();
             BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             String line;
@@ -175,6 +177,22 @@ public class Repositorio {
             }
         };
         new Thread(runnable).start();
+    }
+
+    public void requestWithPool() {
+        //ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
+        ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(2);
+        for (int i = 0; i < 10; i++) {
+            int finalI = i;
+            executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    Log.v("xyz", "poolSize: " + executor.getPoolSize());
+                    Log.v("xyz", "queueSize: " + executor.getQueue().size());
+                    liveResult.postValue("RequestWithPool " + finalI + ": " + parseString(getData()));
+                }
+            });
+        }
     }
 
     public void requestWithHandlerPost() {
